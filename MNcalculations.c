@@ -212,13 +212,17 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
     int divisorSize = MNsize(divisor);
     int dividendSize = MNsize(dividend);
     unsigned char smallQuotient;
-    int residueIsNULL = 0;
+    int quotientIsNULL = 0, residueIsNULL = 0;
 
-    if (dividendSize == 0)
+    if (divisorSize = 0)
         return -1; // error: divisor is 0;
 
-    //initiate smaller part of divident
-    if (residue == NULL) 
+    if (!quotient) {
+        quotient = MNinit(dividendSize);
+        quotientIsNULL = 1;
+    }
+
+    if (!residue) 
     {
         residue = MNinit(divisorSize + 1);
         residueIsNULL = 1;
@@ -244,7 +248,10 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
         MNsetDigit(quotient, i, smallQuotient);
     }
 
-    if (residueIsNULL == 1)
+    if (quotientIsNULL) 
+        MNdelete(quotient);
+    
+    if (residueIsNULL)
         MNdelete(residue);
 
     return 0;

@@ -15,6 +15,7 @@ enum OperationType {
     addition, 
     multiplication,
     division, 
+    modulo, 
     exponentiation,
     conversion
 };
@@ -192,6 +193,16 @@ int main(int argc, char **argv) {
                 }
                 break;
 
+            case modulo:
+
+                result = MNinit(MNsize(secondNumber));
+                if(MNdivide(firstNumber, secondNumber, NULL, result, numeralSystem) == -1) 
+                {
+                    printf("\033[1;31mError\033[0m: Can't divide by 0! (line: %d)\n", inputFileLine);
+                    errorType = divisionByZero;
+                }
+                break;
+
             case exponentiation:
                 
                 result = MNinit(MNsize(firstNumber));
@@ -290,6 +301,9 @@ enum OperationType getOperation(char *input, unsigned char *conversionNumeralSys
 
         case '^':
             return exponentiation;
+
+        case '%':
+            return modulo;
 
         default:
             break;
