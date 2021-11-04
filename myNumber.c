@@ -7,9 +7,8 @@ myNumber *MNinit(size_t initialSize)
 {
     //allocate memory for new number
     myNumber *number = malloc(sizeof(myNumber));
-    number->numberOfDigits = 0;
     number->allocatedMemory = initialSize > 0 ? initialSize : 1;
-    number->digits = malloc(number->allocatedMemory * sizeof(unsigned char));
+    number->digits = calloc(number->allocatedMemory, sizeof(unsigned char));
 
     return number;
 }
@@ -18,7 +17,7 @@ int MNgrow(myNumber *number)
 {
     number->allocatedMemory = 2*number->allocatedMemory;
     number->digits = realloc(number->digits, number->allocatedMemory);
-    printf("(myNumber): New memory allocated: %d\n", number->allocatedMemory);
+    printf("(MN): New memory allocated: %d\n", number->allocatedMemory);
 
     return 0;
 }
@@ -34,25 +33,24 @@ int MNsetDigit(myNumber *number, size_t index, unsigned char digit)
     while (index >= number->allocatedMemory) 
         MNgrow(number);
 
-    //only increase size when leading digit is non-zero or the only digit is zero
-    if (index >= number->numberOfDigits && digit != 0)
-        number->numberOfDigits = index + 1;
-    
-    if(number->numberOfDigits == 0 && digit == 0)
-        number->numberOfDigits = 1;
-
     *(number->digits + index) = digit;
     return 0;
 }
 
 size_t MNsize(myNumber *number) 
 {
-    return number->numberOfDigits;
+    size_t size = number->allocatedMemory;
+
+    while (*(number->digits + size - 1) == 0 && size > 0)
+        size--;
+    
+    return size;
 }
 
 int MNerase(myNumber *number)
 {
-    number->numberOfDigits = 0;
+    for (int i = 0; i < number->allocatedMemory; i++)
+        *(number->digits + i) = 0;
 
     return 0;
 }

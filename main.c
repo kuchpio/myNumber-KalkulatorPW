@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "mycalculations.h"
+#include "MNcalculations.h"
 #include "myNumber.h"
 
 #define MAX_INPUT_SIZE 100
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
 
             case division:
 
-                result = MNinit(MNsize(firstNumber) - MNsize(secondNumber) + 1);
+                result = MNinit(MNsize(firstNumber));
                 if(MNdivide(firstNumber, secondNumber, result, NULL, numeralSystem) == -1) 
                 {
                     printf("\033[1;31mError\033[0m: Can't divide by 0! (line: %d)\n", inputFileLine);
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
 
             case exponentiation:
                 
-                result = MNinit(4 * MNsize(firstNumber));
+                result = MNinit(MNsize(firstNumber));
                 MNraise(firstNumber, secondNumber, result, numeralSystem);
                 break;
 

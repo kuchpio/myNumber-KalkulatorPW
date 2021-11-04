@@ -5,7 +5,6 @@
 
 typedef struct {
     unsigned char *digits; //number 4D67A will be represented as 10, 7, 6, 13, 4
-    size_t numberOfDigits;
     size_t allocatedMemory;
 }myNumber;
 
