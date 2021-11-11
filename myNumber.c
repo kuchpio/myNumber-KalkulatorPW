@@ -17,7 +17,7 @@ int MNgrow(myNumber *number)
 {
     number->allocatedMemory = 2*number->allocatedMemory;
     number->digits = realloc(number->digits, number->allocatedMemory);
-    printf("(MN): New memory allocated: %d\n", number->allocatedMemory);
+    printf("(MN): New memory allocated: %ld\n", number->allocatedMemory);
 
     return 0;
 }

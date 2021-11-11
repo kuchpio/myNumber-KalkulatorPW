@@ -86,7 +86,7 @@ int MNadd(myNumber *a, myNumber *b, myNumber *result, unsigned char base)
     int i = 0, aSize = MNsize(a), bSize = MNsize(b);
     unsigned char leadingDigit = 0, sum;
 
-    while (i < aSize && i < aSize) 
+    while (i < aSize && i < bSize) 
     {
         sum = MNgetDigit(a, i) + MNgetDigit(b, i) + leadingDigit;
         leadingDigit = sum / base;
@@ -98,7 +98,7 @@ int MNadd(myNumber *a, myNumber *b, myNumber *result, unsigned char base)
         leadingDigit = sum / base;
         MNsetDigit(result, i++, sum % base);
     }
-    while (i < aSize) 
+    while (i < bSize) 
     {
         sum = MNgetDigit(b, i) + leadingDigit;
         leadingDigit = sum / base;
@@ -168,15 +168,9 @@ int MNsubstract(myNumber *a, myNumber *b, myNumber *result, unsigned char base) 
     int i = 0, j, aSize = MNsize(a), bSize = MNsize(b);
     myNumber *aCopy = MNinit(aSize); //working on copy of a not to change a
 
-    if (MNcompare(b, a)) 
-    {
-        printf("Invalid arguments for MNsubstract: first number cannot be smaller than second number\n");
-        return -1; //error
-    }
-
     //copy a to aCopy
-    for (int i = 0; i < aSize; i++) 
-        MNsetDigit(aCopy, i, MNgetDigit(a, i));
+    for (int j = 0; j < aSize; j++) 
+        MNsetDigit(aCopy, j, MNgetDigit(a, j));
 
     while (i < bSize) 
     {
@@ -199,7 +193,10 @@ int MNsubstract(myNumber *a, myNumber *b, myNumber *result, unsigned char base) 
 
     //copy rest of number a to result
     while (i < aSize) 
-        MNsetDigit(result, i++, MNgetDigit(aCopy, i));
+    {
+        MNsetDigit(result, i, MNgetDigit(aCopy, i));
+        i++;
+    }
 
     MNdelete(aCopy);
 
@@ -214,7 +211,7 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
     unsigned char smallQuotient;
     int quotientIsNULL = 0, residueIsNULL = 0;
 
-    if (divisorSize = 0)
+    if (divisorSize == 0)
         return -1; // error: divisor is 0;
 
     if (!quotient) {
@@ -227,7 +224,7 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
         residue = MNinit(divisorSize + 1);
         residueIsNULL = 1;
     }
-
+    
     MNerase(residue);
 
     for (int i = dividendSize - 1; i >= 0; i--) 

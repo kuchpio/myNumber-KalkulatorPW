@@ -1,8 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
+#ifdef _WIN32
+    #include <direct.h>
+    #define mkdir _mkdir
+#else
+    #include <sys/stat.h>
+#endif
 
 #include "MNcalculations.h"
 #include "myNumber.h"
@@ -35,7 +40,8 @@ enum OperationType getOperation(char *input, unsigned char *conversionNumeralSys
 unsigned char getNumeralSystem(char *input); //returns number system from <2;16> or 0 for numeral system out of range or 1 for invalid characters
 
 int main(int argc, char **argv) {
-    char input[MAX_INPUT_SIZE], outputFileName[MAX_INPUT_SIZE], outputDirectory[MAX_INPUT_SIZE], separateOutput;
+    char input[MAX_INPUT_SIZE], outputDirectory[MAX_INPUT_SIZE], separateOutput;
+    char outputPath[MAX_INPUT_SIZE + 17];
     char firstNumberString[MAX_INPUT_SIZE], secondNumberString[MAX_INPUT_SIZE], *resultString; 
     FILE *instructionFile, *outputFile;
     uint inputFileLine = 1, calculationNumber = 1;
@@ -78,8 +84,7 @@ int main(int argc, char **argv) {
             printf("Name of results directory: ");
             scanf("%s", outputDirectory);
 
-            if (stat(outputDirectory, NULL) == -1)
-                mkdir(outputDirectory, 0700);
+            mkdir(outputDirectory, 0700);
             
             break;
         } 
@@ -103,7 +108,6 @@ int main(int argc, char **argv) {
         errorType = noError;
 
         if (separateOutput == 'y') {
-            char outputPath[MAX_INPUT_SIZE + 17];
             sprintf(outputPath, "%s/%d.txt", outputDirectory, calculationNumber);
             outputFile = fopen(outputPath, "w");
         }
