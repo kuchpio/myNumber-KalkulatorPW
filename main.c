@@ -129,7 +129,7 @@ int main(int argc, char **argv)
         if (operationType == invalidOperation) 
         {
             printf(" <ERROR>: Unknown operation: '%s' (line: %d)\n", inputFromFile, inputFileLine);
-            errorType = invalidOperation;
+            errorType = unknownOperation;
         } 
         else if (operationType == invalidConvertionNS) 
         {
@@ -145,7 +145,8 @@ int main(int argc, char **argv)
         if (numeralSystem == 0 || numeralSystem == 1) 
         {
             printf(" <ERROR>: Invalid numeral system: '%s' (line: %d)\n", inputFromFile, inputFileLine);
-            errorType = invalidNumeralSystem;
+            numeralSystem = 0;
+            errorType = errorType == noError ? invalidNumeralSystem : errorType;
         }
 
         inputFileLine += 2;
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
         if (charsToNumber(inputFromFile, firstNumber, operationType == conversion ? conversionNumeralSystem: numeralSystem) != 0)
         {
             printf(" <ERROR>: Invalid digit(s) in '%s' for base %d numeral system (line: %d)\n", inputFromFile, numeralSystem, inputFileLine);
-            errorType = invalidFirstNumberDigits;
+            errorType = errorType == noError ? invalidFirstNumberDigits : errorType;
         }
 
         //init second number
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
             if (charsToNumber(inputFromFile, secondNumber, numeralSystem) != 0)
             {
                 printf(" <ERROR>: Invalid digit(s) in '%s' for base %d numeral system (line: %d)\n", inputFromFile, numeralSystem, inputFileLine);
-                errorType = invalidSecondNumberDigits;
+                errorType = errorType == noError ? invalidSecondNumberDigits : errorType;
             }
         }
 
@@ -203,7 +204,7 @@ int main(int argc, char **argv)
                 if(MNsize(secondNumber) == 0) 
                 {
                     printf(" <ERROR>: Division by 0 is undefined (line: %d)\n", inputFileLine);
-                    errorType = divisionByZero;
+                    errorType = errorType == noError ? divisionByZero : errorType;
                     break;
                 }
 
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
                 if (MNsize(secondNumber) == 0)
                 {
                     printf(" <ERROR>: Division by 0 is undefined (line: %d)\n", inputFileLine);
-                    errorType = divisionByZero;
+                    errorType = errorType == noError ? divisionByZero : errorType;
                     break;
                 }
 
@@ -301,9 +302,9 @@ int main(int argc, char **argv)
         fclose(outputFile);
     
     if (errorCounter > 0)
-        printf("Program found errors in %d calculation(s). Press any key to end the program.", errorCounter);
+        printf("\nProgram found errors in %d calculation(s). Press any key to end the program.", errorCounter);
     else
-        printf("Program successfully performed all calculations. Press any key to end the program.");
+        printf("\nProgram successfully performed all calculations. Press any key to end the program.");
 
     getchar();
     getchar();
