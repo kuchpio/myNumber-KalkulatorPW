@@ -6,14 +6,14 @@
     #include <direct.h>
 #elif defined __linux__
     #include <sys/stat.h>
-    #define _mkdir(outputDirectory) (mkdir(outputDirectory, 0700))
+    #define _mkdir(outputDirectory) mkdir(outputDirectory, 0700)
 #endif
 
 #include "MNcalculations.h"
 #include "myNumber.h"
 
 #define MAX_NUMBER_SIZE 16000
-#define MAX_PATH_SIZE 100
+#define MAX_PATH_SIZE 96
 
 enum OperationType {
     invalidOperation, 
@@ -42,7 +42,7 @@ unsigned char getNumeralSystem(char *input); //returns number system from <2;16>
 int main(int argc, char **argv) 
 {
     char inputPathToFile[MAX_PATH_SIZE], inputFromFile[MAX_NUMBER_SIZE], inputFileAsArg = 0;
-    char outputPathToFile[MAX_PATH_SIZE], outputDirectory[MAX_PATH_SIZE], separateOutput, *resultString;
+    char outputPathToFile[MAX_PATH_SIZE + 17], outputDirectory[MAX_PATH_SIZE], separateOutput, *resultString;
     FILE *instructionFile = NULL, *outputFile = NULL;
     unsigned int inputFileLine = 1, calculationNumber = 1, errorCounter = 0;
     unsigned char numeralSystem, conversionNumeralSystem = 0;
@@ -234,6 +234,9 @@ int main(int argc, char **argv)
 
                 result = MNinit(4 * MNsize(firstNumber)); //max for convertion (16) -> (2)
                 MNconvert(firstNumber, result, conversionNumeralSystem, numeralSystem);
+                break;
+
+            default:
                 break;
             }
         }
