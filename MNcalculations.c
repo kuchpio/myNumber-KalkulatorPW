@@ -26,13 +26,13 @@ int charsToNumber(char *chars, myNumber *number, unsigned char base) //converts 
 
         else 
         {
-            printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
+            //printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
             return -1; //error
         }
 
         if (MNgetDigit(number, i) >= base) 
         {
-            printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
+            //printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
             return -1; //error
         }
     }
@@ -72,7 +72,8 @@ char *numberToChars(myNumber *number) //converts myNumber to string
         } 
         else 
         {
-            printf("Incorrect value: %d (index: %d)\n", digitValue, numberSize - j - 1);
+            *(result + j) = '?';
+            //printf("Incorrect value: %d (index: %d)\n", digitValue, numberSize - j - 1);
         }
     }
 
@@ -116,14 +117,14 @@ int MNmultiply(myNumber *a, myNumber *b, myNumber *result, unsigned char base)
     unsigned char product, leadingDigit;
 
     //init result as 0's
-    for (int i = 0; i < aSize + bSize; i++)
+    for (unsigned int i = 0; i < aSize + bSize; i++)
         MNsetDigit(result, i, 0);
 
 
-    for (int i = 0; i < aSize; i++) 
+    for (unsigned int i = 0; i < aSize; i++) 
     {
         leadingDigit = 0;
-        for (int j = 0; j < bSize; j++) 
+        for (unsigned int j = 0; j < bSize; j++) 
         {
             product = MNgetDigit(result, i + j) + leadingDigit + MNgetDigit(a, i) * MNgetDigit(b, j);
             MNsetDigit(result, i + j, product % base);
@@ -304,12 +305,11 @@ int MNraise(myNumber *a, myNumber *exponent, myNumber *result, unsigned char bas
 {
     myNumber *binaryExponent = MNinit(4 * MNsize(exponent));
     myNumber *temp = MNinit(MNsize(a));
-    myNumber *one = MNinit(1);
+    myNumber *zero = MNinit(0);
     int binaryExponentSize;
 
     MNconvert(exponent, binaryExponent, base, 2);
     charsToNumber("1", result, base);
-    charsToNumber("1", one, base);
     binaryExponentSize = MNsize(binaryExponent);
 
     for (int i = binaryExponentSize - 1; i >= 0; i--) 
@@ -319,12 +319,12 @@ int MNraise(myNumber *a, myNumber *exponent, myNumber *result, unsigned char bas
         if (MNgetDigit(binaryExponent, i) == 1)
             MNmultiply(temp, a, result, base);
         else
-            MNmultiply(temp, one, result, base);
+            MNadd(temp, zero, result, base);
     }
 
     MNdelete(binaryExponent);
     MNdelete(temp);
-    MNdelete(one);
+    MNdelete(zero);
 
     return 0;
 }

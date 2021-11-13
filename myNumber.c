@@ -1,6 +1,7 @@
 #include "myNumber.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 myNumber *MNinit(size_t initialSize) 
@@ -15,11 +16,17 @@ myNumber *MNinit(size_t initialSize)
 
 int MNgrow(myNumber *number) 
 {
-    number->allocatedMemory = 2*number->allocatedMemory;
-    number->digits = realloc(number->digits, number->allocatedMemory);
-    printf("(MN): New memory allocated: %ld\n", number->allocatedMemory);
+    unsigned char *tmp = realloc(number->digits, 2*number->allocatedMemory);
+    if (tmp != NULL)
+    {
+        number->digits = tmp;
+        memset(number->digits + number->allocatedMemory, 0, number->allocatedMemory * sizeof(unsigned char));
+        //printf("(MN): Size increased: %ld -> %ld\n", number->allocatedMemory, 2 * number->allocatedMemory);
+        number->allocatedMemory = 2 * number->allocatedMemory;
+        return 0;
+    }
 
-    return 0;
+    return 1;
 }
 
 unsigned char MNgetDigit(myNumber *number, size_t index) 
@@ -49,9 +56,7 @@ size_t MNsize(myNumber *number)
 
 int MNerase(myNumber *number)
 {
-    for (int i = 0; i < number->allocatedMemory; i++)
-        *(number->digits + i) = 0;
-
+    memset(number->digits, 0, number->allocatedMemory * sizeof(unsigned char));
     return 0;
 }
 
