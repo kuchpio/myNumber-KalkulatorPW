@@ -13,7 +13,7 @@
 #include "myNumber.h"
 
 #define MAX_NUMBER_SIZE 16000
-#define MAX_PATH_SIZE 96
+#define MAX_PATH_SIZE 76
 
 enum OperationType {
     invalidOperation, 
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
         instructionFile = fopen(argv[1], "r");
 
         if (instructionFile == NULL)
-            printf("Could not open '%s'.\n", argv[1]);
+            printf(" <ERROR>: Could not open '%s'.\n", argv[1]);
         else
             inputFileAsArg = 1;
     }
@@ -67,14 +67,14 @@ int main(int argc, char **argv)
     {
         while (1) 
         {
-            printf("Name of instructions file: ");
+            printf(" (KALKULATOR): Name of instructions file: ");
             scanf("%s", inputPathToFile);
             getchar(); //remove \n from buffer
 
             instructionFile = fopen(inputPathToFile, "r");
 
             if (instructionFile == NULL)
-                printf("Could not open '%s'.\n", inputPathToFile);
+                printf(" <ERROR>: Could not open '%s'.\n", inputPathToFile);
             else
                 break;
         }
@@ -83,14 +83,14 @@ int main(int argc, char **argv)
     //get info about output file(s)
     while (1) 
     {
-        printf("Write results into separate files? (y/n): ");
+        printf(" (KALKULATOR): Write results into separate files? (y/n): ");
         separateOutput = (unsigned char) getchar();
 
         if (separateOutput == 'y' || separateOutput == 'Y') //separate output files
         {
             separateOutput = 'y';
 
-            printf("Name of results directory: ");
+            printf(" (KALKULATOR): Name of results directory: ");
             scanf("%s", outputDirectory);
 
             _mkdir(outputDirectory);
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
         {
             separateOutput = 'n';
 
-            printf("Name of results file: ");
+            printf(" (KALKULATOR): Name of results file: ");
             scanf("%s", outputPathToFile);
 
             outputFile = fopen(outputPathToFile, "w");
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     //read from file, calculate, write to output
     while (fscanf(instructionFile, "%s", inputFromFile) != -1) 
     {
-        printf(" > Working on calculation %d\n", calculationNumber);
+        printf(" (KALKULATOR): Working on calculation %d\n", calculationNumber);
 
         //open new file when separate output
         if (separateOutput == 'y') 
@@ -302,9 +302,9 @@ int main(int argc, char **argv)
         fclose(outputFile);
     
     if (errorCounter > 0)
-        printf("\nProgram found errors in %d calculation(s). Press any key to end the program.", errorCounter);
+        printf("\n (KALKULATOR): Program found errors in %d calculation(s). Press any key to exit the program.", errorCounter);
     else
-        printf("\nProgram successfully performed all calculations. Press any key to end the program.");
+        printf("\n (KALKULATOR): Program successfully performed all calculations. Press any key to exit the program.");
 
     getchar();
     getchar();
