@@ -19,8 +19,6 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
 
 int MNconvert(myNumber *number, myNumber *convertedNumber, unsigned char originBase, unsigned char convertionBase);
 
-int test_MNconvert(myNumber *number, myNumber *convertedNumber, unsigned char originBase, unsigned char convertionBase);
-
 int MNraise(myNumber *a, myNumber *exponent, myNumber *result, unsigned char base);
 
 #endif

@@ -12,7 +12,7 @@
 #include "MNcalculations.h"
 #include "myNumber.h"
 
-#define MAX_NUMBER_SIZE 16000
+#define MAX_NUMBER_SIZE 16001
 #define MAX_PATH_SIZE 76
 
 enum OperationType {
@@ -35,7 +35,7 @@ enum ErrorType {
     divisionByZero
 };
 
-enum OperationType getOperation(char *input, unsigned char *conversionNumeralSystem); //sets convertionNumberSystem when convertion
+enum OperationType getOperation(char *input, unsigned char *conversionNumeralSystem); //sets convertionNumeralSystem when convertion
 
 unsigned char getNumeralSystem(char *input); //returns number system from <2;16> or 0 for numeral system out of range or 1 for invalid characters
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
         }
 
         //init second number
-        if (operationType != conversion) 
+        if (operationType != conversion && operationType != invalidConvertionNS)
         {  
             inputFileLine += 2;
 
@@ -349,10 +349,10 @@ enum OperationType getOperation(char *input, unsigned char *conversionNumeralSys
 
 unsigned char getNumeralSystem(char *input) //returns numeral system from range <2;16> or 0 if out of range or 1 if invalid characters
 { 
-    int inputLength = strlen(input);
+    size_t inputLength = strlen(input);
     unsigned int numeralSystem = 0, a = 1;
 
-    for (int i = inputLength - 1; i >= 0; i--) 
+    for (long long i = inputLength - 1; i >= 0; i--) 
     {
         if (input[i] < '0' || input[i] > '9')
             return 1; //error - invalid character

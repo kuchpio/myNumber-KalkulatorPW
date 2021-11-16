@@ -9,10 +9,10 @@ int charsToNumber(char *chars, myNumber *number, unsigned char base) //converts 
     //shift down '0', '1' , ..., '9' to 0, 1, ..., 9
     //shift down 'A', 'B', ..., 'F' to 10, 11, ..., 15
     //shift down 'a', 'b', ..., 'f' to 10, 11, ..., 15
-    int charLength = strlen(chars);
+    size_t charLength = strlen(chars);
     unsigned char c;
     
-    for (int i = 0; i < charLength; i++) 
+    for (size_t i = 0; i < charLength; i++)
     {
         c = *(chars + charLength - 1 - i);
         if (c >= '0' && c <= '9') 
@@ -23,18 +23,11 @@ int charsToNumber(char *chars, myNumber *number, unsigned char base) //converts 
 
         else if (c >= 'a' && c <= 'f') 
             MNsetDigit(number, i, c - 'a' + 10);
-
         else 
-        {
-            //printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
-            return -1; //error
-        }
+            return -1; //error - unknown digit
 
         if (MNgetDigit(number, i) >= base) 
-        {
-            //printf("Incorrect digit: '%c' (ASCII: %d) in number %s (base %d)\n", c, c, chars, base);
-            return -1; //error
-        }
+            return -1; //error - digit out of range
     }
 
     return 0;
@@ -42,11 +35,11 @@ int charsToNumber(char *chars, myNumber *number, unsigned char base) //converts 
 
 char *numberToChars(myNumber *number) //converts myNumber to string 
 {
-    int numberSize = MNsize(number);
+    size_t numberSize = MNsize(number);
     char *result;
     unsigned char digitValue;
 
-    if (numberSize == 0) 
+    if (numberSize == 0) // result is zero
     {
         result = malloc(2 * sizeof(char));
         *result = '0';
@@ -58,23 +51,16 @@ char *numberToChars(myNumber *number) //converts myNumber to string
     result = malloc((numberSize + 1) * sizeof(char));
 
     //shift values to their chars
-    for (int j = 0; j < numberSize; j++)
+    for (size_t i = 0; i < numberSize; i++)
     {
-        digitValue = MNgetDigit(number, numberSize - j - 1);
+        digitValue = MNgetDigit(number, numberSize - i - 1);
 
         if (digitValue < 10) 
-        {
-            *(result + j) = digitValue + '0';
-        } 
+            *(result + i) = digitValue + '0';
         else if (digitValue < 16) 
-        {
-            *(result + j) = digitValue - 10 + 'A';
-        } 
+            *(result + i) = digitValue - 10 + 'A';
         else 
-        {
-            *(result + j) = '?';
-            //printf("Incorrect value: %d (index: %d)\n", digitValue, numberSize - j - 1);
-        }
+            *(result + i) = '?'; 
     }
 
     *(result + numberSize) = '\0';
@@ -84,7 +70,7 @@ char *numberToChars(myNumber *number) //converts myNumber to string
 
 int MNadd(myNumber *a, myNumber *b, myNumber *result, unsigned char base) 
 {
-    int i = 0, aSize = MNsize(a), bSize = MNsize(b);
+    size_t i = 0, aSize = MNsize(a), bSize = MNsize(b);
     unsigned char leadingDigit = 0, sum;
 
     while (i < aSize && i < bSize) 
@@ -117,16 +103,14 @@ int MNmultiply(myNumber *a, myNumber *b, myNumber *result, unsigned char base)
     unsigned char product, leadingDigit;
 
     //init result as 0's
-    for (unsigned int i = 0; i < aSize + bSize; i++)
-        MNsetDigit(result, i, 0);
+    MNerase(result);
 
-
-    for (unsigned int i = 0; i < aSize; i++) 
+    for (size_t i = 0; i < aSize; i++) 
     {
         leadingDigit = 0;
-        for (unsigned int j = 0; j < bSize; j++) 
+        for (size_t j = 0; j < bSize; j++)
         {
-            product = MNgetDigit(result, i + j) + leadingDigit + MNgetDigit(a, i) * MNgetDigit(b, j);
+            product = MNgetDigit(result, i + j) + leadingDigit + MNgetDigit(a, i) * MNgetDigit(b, j); // max 15 + 15 + 15 * 15 = 255
             MNsetDigit(result, i + j, product % base);
             leadingDigit = product / base;
         }
@@ -138,7 +122,7 @@ int MNmultiply(myNumber *a, myNumber *b, myNumber *result, unsigned char base)
 
 int MNcompare(myNumber *a, myNumber *b) //returns 1 when a > b, 0 otherwise
 {
-    int aSize = MNsize(a), bSize = MNsize(b);
+    size_t aSize = MNsize(a), bSize = MNsize(b);
     unsigned char aDigit, bDigit;
 
     if (aSize > bSize)
@@ -147,7 +131,7 @@ int MNcompare(myNumber *a, myNumber *b) //returns 1 when a > b, 0 otherwise
     if (aSize < bSize)
         return 0;
 
-    for (int i = aSize - 1; i >= 0; i--) 
+    for (long long i = aSize - 1; i >= 0; i--) 
     {
         aDigit = MNgetDigit(a, i);
         bDigit = MNgetDigit(b, i);
@@ -166,7 +150,7 @@ int MNcompare(myNumber *a, myNumber *b) //returns 1 when a > b, 0 otherwise
 int MNsubstract(myNumber *a, myNumber *b, myNumber *result, unsigned char base) //assumes a >= b
 {
     unsigned char aDigit, bDigit;
-    int i = 0, j, aSize = MNsize(a), bSize = MNsize(b);
+    size_t i = 0, j, aSize = MNsize(a), bSize = MNsize(b);
     myNumber *aCopy = MNinit(aSize); //working on copy of a not to change a
 
     //copy a to aCopy
@@ -207,10 +191,9 @@ int MNsubstract(myNumber *a, myNumber *b, myNumber *result, unsigned char base) 
 int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber *residue, unsigned char base) {
 
     //check if divisor is 0
-    int divisorSize = MNsize(divisor);
-    int dividendSize = MNsize(dividend);
+    size_t divisorSize = MNsize(divisor), dividendSize = MNsize(dividend);
     unsigned char smallQuotient;
-    int quotientIsNULL = 0, residueIsNULL = 0;
+    char quotientIsNULL = 0, residueIsNULL = 0;
 
     if (divisorSize == 0)
         return -1; // error: divisor is 0;
@@ -228,10 +211,10 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
     
     MNerase(residue);
 
-    for (int i = dividendSize - 1; i >= 0; i--) 
+    for (long long i = dividendSize - 1; i >= 0; i--) 
     {
         //push i-th digit of dividend to the back of residue
-        for (int j = MNsize(residue) - 1; j >= 0; j--)
+        for (long long j = MNsize(residue) - 1; j >= 0; j--)
             MNsetDigit(residue, j + 1, MNgetDigit(residue, j));
         
         MNsetDigit(residue, 0, MNgetDigit(dividend, i));
@@ -257,7 +240,7 @@ int MNdivide(myNumber *dividend, myNumber *divisor, myNumber *quotient, myNumber
 
 int MNconvert(myNumber *number, myNumber *convertedNumber, unsigned char originBase, unsigned char convertionBase) 
 {
-    int numberSize = MNsize(number);
+    size_t numberSize = MNsize(number);
     unsigned char digit;
     myNumber *originBaseConverted = MNinit(5 * sizeof(unsigned char)); //16 -> 10000
     myNumber *temp = MNinit(4 * MNsize(number));
@@ -278,7 +261,7 @@ int MNconvert(myNumber *number, myNumber *convertedNumber, unsigned char originB
         digit = digit / convertionBase;
     }
 
-    for (int i = numberSize - 2; i >= 0; i--) 
+    for (long long i = numberSize - 2; i >= 0; i--) 
     {
         MNmultiply(convertedNumber, originBaseConverted, temp, convertionBase);
         
@@ -306,13 +289,13 @@ int MNraise(myNumber *a, myNumber *exponent, myNumber *result, unsigned char bas
     myNumber *binaryExponent = MNinit(4 * MNsize(exponent));
     myNumber *temp = MNinit(MNsize(a));
     myNumber *zero = MNinit(0);
-    int binaryExponentSize;
+    size_t binaryExponentSize;
 
     MNconvert(exponent, binaryExponent, base, 2);
     charsToNumber("1", result, base);
     binaryExponentSize = MNsize(binaryExponent);
 
-    for (int i = binaryExponentSize - 1; i >= 0; i--) 
+    for (long long i = binaryExponentSize - 1; i >= 0; i--) 
     {
         MNmultiply(result, result, temp, base);
 
