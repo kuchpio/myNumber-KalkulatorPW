@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 # include <direct.h>
 #elif defined __linux__
-# include <sys/stat.h>
 # define _mkdir(outputDirectory) mkdir(outputDirectory, 0700)
+# define _stat stat
 #endif
 
 #include "MNcalculations.h"
@@ -47,6 +49,8 @@ int isFormatCorrect(const char* filename, const char* format);
 
 int getYNAnswer(const char* question);
 
+int isDirOrFile(const char* path);
+
 int main(int argc, char** argv)
 {
     int separateOutputMode;
@@ -61,13 +65,8 @@ int main(int argc, char** argv)
     time_t calcStart, calcEnd;
 
     //open instruction file from argv[1]
-    if (argc == 2)
-    {
-        inputFile = fopen(argv[1], "r");
-
-        if (inputFile == NULL)
-            fprintf(stdout, " (KALKULATOR): Could not open '%s'.\n", argv[1]);
-    }
+    if (argc == 2 && !(inputFile = fopen(argv[1], "r")) )
+        fprintf(stdout, " (KALKULATOR): Could not open '%s'.\n", argv[1]);
 
     //or open input file from user input
     if (inputFile == NULL)
@@ -77,7 +76,7 @@ int main(int argc, char** argv)
             fprintf(stdout, " (KALKULATOR): Name of instructions file: ");
             readFromStream(stdin, &pathToInputFile, PREFERABLE_INPUT_SIZE);
 
-            if (inputFile = fopen(pathToInputFile, "r"))
+            if ( (inputFile = fopen(pathToInputFile, "r")) )
                 break;
 
             fprintf(stdout, " (KALKULATOR): Could not open '%s'.\n", pathToInputFile);
@@ -95,7 +94,9 @@ int main(int argc, char** argv)
             fprintf(stdout, " (KALKULATOR): Name of output directory: ");
             readFromStream(stdin, &pathToOutputDirectory, PREFERABLE_INPUT_SIZE);
 
-            if (_mkdir(pathToOutputDirectory) == 0) break;
+            _mkdir(pathToOutputDirectory);
+
+            if (isDirOrFile(pathToOutputDirectory) == 1) break;
 
             fprintf(stdout, " (KALKULATOR): Could not create directory '%s'.\n", pathToOutputDirectory);
         }
@@ -114,7 +115,9 @@ int main(int argc, char** argv)
                 continue;
             }
 #endif
-            if (outputFile = fopen(pathToOutputFile, "w")) break;
+            outputFile = fopen(pathToOutputFile, "w");
+            
+            if (isDirOrFile(pathToOutputFile) == 2) break;
             
             fprintf(stdout, " (KALKULATOR): Could not create file '%s'.\n", pathToOutputFile);
         }
@@ -503,4 +506,19 @@ int getYNAnswer(const char* question)
 
         while (getchar() != '\n'); //clear input buffer
     }
+}
+
+int isDirOrFile(const char* path)
+{
+    struct _stat buffer;
+    if (_stat(path, &buffer) == -1)
+        return 0;
+
+    if (S_IFDIR & buffer.st_mode )
+        return 1;
+
+    if (S_IFREG & buffer.st_mode)
+        return 2;
+
+    return 0;
 }
