@@ -90,10 +90,15 @@ int main(int argc, char** argv)
 
     if (separateOutputMode) //separate output files
     {
-        fprintf(stdout, " (KALKULATOR): Name of output directory: ");
-        readFromStream(stdin, &pathToOutputDirectory, PREFERABLE_INPUT_SIZE);
+        while (1)
+        {
+            fprintf(stdout, " (KALKULATOR): Name of output directory: ");
+            readFromStream(stdin, &pathToOutputDirectory, PREFERABLE_INPUT_SIZE);
 
-        _mkdir(pathToOutputDirectory);
+            if (_mkdir(pathToOutputDirectory) == 0) break;
+
+            fprintf(stdout, " (KALKULATOR): Could not create directory '%s'.\n", pathToOutputDirectory);
+        }
     }
     else //single output file
     {
@@ -103,14 +108,16 @@ int main(int argc, char** argv)
             readFromStream(stdin, &pathToOutputFile, PREFERABLE_INPUT_SIZE);
 
 #ifdef _WIN32 //ensure .txt file on windows builds
-            if (isFormatCorrect(pathToOutputFile, ".txt")) break;
-#else
-            break;
-#endif   
-
-            fprintf(stdout, " (KALKULATOR): Name of output file must end with '.txt'.\n");
+            if (!isFormatCorrect(pathToOutputFile, ".txt"))
+            {
+                fprintf(stdout, " (KALKULATOR): Name of output file must end with '.txt'.\n");
+                continue;
+            }
+#endif
+            if (outputFile = fopen(pathToOutputFile, "w")) break;
+            
+            fprintf(stdout, " (KALKULATOR): Could not create file '%s'.\n", pathToOutputFile);
         }
-        outputFile = fopen(pathToOutputFile, "w");
     }
 
     //main loop
@@ -251,7 +258,7 @@ int main(int argc, char** argv)
         {
             resultString = numberToChars(result);
             fprintf(outputFile, "%s", resultString);
-            fprintf(stdout, "Done in %gs.\n", ((float)(calcEnd - calcStart)) / CLOCKS_PER_SEC);
+            fprintf(stdout, "Done in %fs.\n", ((float)(calcEnd - calcStart)) / CLOCKS_PER_SEC);
         }
         else //write errors
         {
@@ -397,7 +404,7 @@ char readFromStream(FILE *inputFile, char **dest, size_t destSize)
         if (tmp == NULL)
             return -1;
 
-        destSize *= 2;
+        destSize++;
         *dest = tmp;
     }
     
