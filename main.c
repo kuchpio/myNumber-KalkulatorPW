@@ -1,361 +1,463 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef _WIN32
-    #include <direct.h>
+# include <direct.h>
 #elif defined __linux__
-    #include <sys/stat.h>
-    #define _mkdir(outputDirectory) mkdir(outputDirectory, 0700)
+# include <sys/stat.h>
+# define _mkdir(outputDirectory) mkdir(outputDirectory, 0700)
 #endif
 
 #include "MNcalculations.h"
 #include "myNumber.h"
 
-#define MAX_NUMBER_SIZE 16001
-#define MAX_PATH_SIZE 76
+#define PREFERABLE_INPUT_SIZE 32
 
-enum OperationType {
-    invalidOperation, 
-    invalidConvertionNS,
-    addition, 
-    multiplication,
-    division, 
-    modulo, 
-    exponentiation,
-    conversion
-};
-
-enum ErrorType {
-    noError,
-    unknownOperation,
-    invalidNumeralSystem,
-    invalidFirstNumberDigits,
-    invalidSecondNumberDigits, 
-    divisionByZero
-};
-
-enum OperationType getOperation(char *input, unsigned char *conversionNumeralSystem); //sets convertionNumeralSystem when convertion
-
-unsigned char getNumeralSystem(char *input); //returns number system from <2;16> or 0 for numeral system out of range or 1 for invalid characters
-
-int main(int argc, char **argv) 
+enum OperationType 
 {
-    char inputPathToFile[MAX_PATH_SIZE], inputFromFile[MAX_NUMBER_SIZE], inputFileAsArg = 0;
-    char outputPathToFile[MAX_PATH_SIZE + 17], outputDirectory[MAX_PATH_SIZE], separateOutput, *resultString;
-    FILE *instructionFile = NULL, *outputFile = NULL;
-    unsigned int inputFileLine = 1, calculationNumber = 1, errorCounter = 0;
-    unsigned char numeralSystem, conversionNumeralSystem = 0;
+    Addition,
+    Multiplication,
+    Division,
+    Modulo,
+    Exponentiation,
+    Conversion, 
+    UnknownOperation
+};
 
-    enum ErrorType errorType = noError;
+enum OperationErrors
+{
+    invalidNumeralSystem = 1,
+    invalidConversionNumeralSystem = 1 << 1,
+    invalidFirstNumberDigits = 1 << 2,
+    invalidSecondNumberDigits = 1 << 3,
+    divisionByZero = 1 << 4,
+};
+
+char readFromStream(FILE* inputFile, char** dest, size_t destSize);
+
+int isCharInString(char c, const char* string);
+
+enum OperationType getOperationType(const char* operationString);
+
+unsigned char getNumeralSystem(char* input);
+
+int isFormatCorrect(const char* filename, const char* format);
+
+int getYNAnswer(const char* question);
+
+int main(int argc, char** argv)
+{
+    int separateOutputMode;
+    char *pathToInputFile = NULL, *pathToOutputDirectory = NULL, *pathToOutputFile = NULL;
+    FILE *inputFile = NULL, *outputFile = NULL;
+    
+    unsigned int inputFileLine = 1, calculationNumber = 1, errorFlags = 0, wroteToOutput = 0, errorCounter = 0, fatal = 0;
+    char *operatorString = NULL, *numeralSystemString = NULL, *firstNumberString = NULL, *secondNumberString = NULL, *resultString = NULL;
     enum OperationType operationType;
-    myNumber *firstNumber, *secondNumber = NULL, *result = NULL;
+    unsigned char numeralSystem, conversionNumeralSystem = 0;
+    myNumber *firstNumber = NULL, *secondNumber = NULL, *result = NULL;
+    time_t calcStart, calcEnd;
 
     //open instruction file from argv[1]
-    if (argc == 2) 
+    if (argc == 2)
     {
-        instructionFile = fopen(argv[1], "r");
+        inputFile = fopen(argv[1], "r");
 
-        if (instructionFile == NULL)
-            printf(" <ERROR>: Could not open '%s'.\n", argv[1]);
-        else
-            inputFileAsArg = 1;
+        if (inputFile == NULL)
+            fprintf(stdout, " (KALKULATOR): Could not open '%s'.\n", argv[1]);
     }
 
-    //or open instruction file from user input
-    if (!inputFileAsArg)
+    //or open input file from user input
+    if (inputFile == NULL)
     {
-        while (1) 
+        while (1)
         {
-            printf(" (KALKULATOR): Name of instructions file: ");
-            scanf("%s", inputPathToFile);
-            getchar(); //remove \n from buffer
+            fprintf(stdout, " (KALKULATOR): Name of instructions file: ");
+            readFromStream(stdin, &pathToInputFile, PREFERABLE_INPUT_SIZE);
 
-            instructionFile = fopen(inputPathToFile, "r");
-
-            if (instructionFile == NULL)
-                printf(" <ERROR>: Could not open '%s'.\n", inputPathToFile);
-            else
+            if (inputFile = fopen(pathToInputFile, "r"))
                 break;
+
+            fprintf(stdout, " (KALKULATOR): Could not open '%s'.\n", pathToInputFile);
         }
+        free(pathToInputFile);
     }
 
-    //get info about output file(s)
-    while (1) 
+    //get output mode
+    separateOutputMode = getYNAnswer(" (KALKULATOR): Write results into separate files? (y/n): ");
+
+    if (separateOutputMode) //separate output files
     {
-        printf(" (KALKULATOR): Write results into separate files? (y/n): ");
-        separateOutput = (unsigned char) getchar();
+        fprintf(stdout, " (KALKULATOR): Name of output directory: ");
+        readFromStream(stdin, &pathToOutputDirectory, PREFERABLE_INPUT_SIZE);
 
-        if (separateOutput == 'y' || separateOutput == 'Y') //separate output files
+        _mkdir(pathToOutputDirectory);
+    }
+    else //single output file
+    {
+        while (1)
         {
-            separateOutput = 'y';
+            fprintf(stdout, " (KALKULATOR): Name of output file: ");
+            readFromStream(stdin, &pathToOutputFile, PREFERABLE_INPUT_SIZE);
 
-            printf(" (KALKULATOR): Name of results directory: ");
-            scanf("%s", outputDirectory);
-
-            _mkdir(outputDirectory);
-            
+#ifdef _WIN32 //ensure .txt file on windows builds
+            if (isFormatCorrect(pathToOutputFile, ".txt")) break;
+#else
             break;
-        } 
-        else if (separateOutput == 'n' || separateOutput == 'N') //single output file
-        {
-            separateOutput = 'n';
+#endif   
 
-            printf(" (KALKULATOR): Name of results file: ");
-            scanf("%s", outputPathToFile);
-
-            outputFile = fopen(outputPathToFile, "w");
-
-            break;
+            fprintf(stdout, " (KALKULATOR): Name of output file must end with '.txt'.\n");
         }
+        outputFile = fopen(pathToOutputFile, "w");
     }
 
-    //read from file, calculate, write to output
-    while (fscanf(instructionFile, "%s", inputFromFile) != -1) 
+    //main loop
+    while (1)
     {
-        printf(" (KALKULATOR): Working on calculation %d\n", calculationNumber);
+        //read and handle operator
+        if (readFromStream(inputFile, &operatorString, PREFERABLE_INPUT_SIZE))
+            break;
 
-        //open new file when separate output
-        if (separateOutput == 'y') 
+        //read numeral system base / conversion numeral system base
+        if (readFromStream(inputFile, &numeralSystemString, PREFERABLE_INPUT_SIZE))
+            break;
+
+        //read first number
+        if (readFromStream(inputFile, &firstNumberString, PREFERABLE_INPUT_SIZE))
+            break;
+
+        //handle operation
+        operationType = getOperationType(operatorString);
+        if (operationType == UnknownOperation) 
         {
-            sprintf(outputPathToFile, "%s/%d.txt", outputDirectory, calculationNumber);
-            outputFile = fopen(outputPathToFile, "w");
+            fprintf(stdout, " (KALKULATOR): Working on calculation %u (line: %u) ... ", calculationNumber, inputFileLine);
+            fprintf(stderr, "\n\t<ERROR>: Unknown operation: '%s'.\n", operatorString);
+            fatal = 1;
+            break;
         }
-
-        //handle operation/convertion numeral system base
-        fprintf(outputFile, "%s ", inputFromFile);
-        operationType = getOperation(inputFromFile, &conversionNumeralSystem);
         
-        if (operationType == invalidOperation) 
+        //read second number
+        if (operationType != Conversion && readFromStream(inputFile, &secondNumberString, PREFERABLE_INPUT_SIZE))
+            break;
+
+        fprintf(stdout, " (KALKULATOR): Working on calculation %u (line: %u) ... ", calculationNumber, inputFileLine);
+
+        //handle input, check for errors
+        if (operationType == Conversion) //conversion
         {
-            printf(" <ERROR>: Unknown operation: '%s' (line: %d)\n", inputFromFile, inputFileLine);
-            errorType = unknownOperation;
-        } 
-        else if (operationType == invalidConvertionNS) 
+            //handle numeralSystem
+            numeralSystem = getNumeralSystem(operatorString);
+            errorFlags |= numeralSystem == 0 ? invalidNumeralSystem : 0;
+
+            //hande conversionNumeralSystem
+            conversionNumeralSystem = getNumeralSystem(numeralSystemString);
+            errorFlags |= conversionNumeralSystem == 0 ? invalidConversionNumeralSystem: 0;
+
+            //handle first number
+            firstNumber = MNinit(strlen(firstNumberString));
+            errorFlags |= charsToNumber(firstNumberString, firstNumber, numeralSystem) == -1 ? invalidFirstNumberDigits : 0;
+        }
+        else //other operations
         {
-            printf(" <ERROR>: Invalid numeral system: '%s' (line: %d)\n", inputFromFile, inputFileLine);
-            errorType = invalidNumeralSystem;
+            //handle numeral system base
+            numeralSystem = getNumeralSystem(numeralSystemString);
+            errorFlags |= numeralSystem == 0 ? invalidNumeralSystem: 0;
+
+            //handle first number
+            firstNumber = MNinit(strlen(firstNumberString));
+            errorFlags |= charsToNumber(firstNumberString, firstNumber, numeralSystem) == -1 ? invalidFirstNumberDigits: 0;
+
+            //handle second number
+            secondNumber = MNinit(strlen(secondNumberString));
+            errorFlags |= charsToNumber(secondNumberString, secondNumber, numeralSystem) == -1 ? invalidSecondNumberDigits : 0;
         }
 
-        //handle numeral system base
-        fscanf(instructionFile, "%s", inputFromFile);
-        fprintf(outputFile, "%s", inputFromFile);
-        numeralSystem = getNumeralSystem(inputFromFile);
-
-        if (numeralSystem == 0 || numeralSystem == 1) 
+        //perform operation
+        if (errorFlags == 0)
         {
-            printf(" <ERROR>: Invalid numeral system: '%s' (line: %d)\n", inputFromFile, inputFileLine);
-            numeralSystem = 0;
-            errorType = errorType == noError ? invalidNumeralSystem : errorType;
-        }
-
-        inputFileLine += 2;
-
-        //init first number
-        fscanf(instructionFile, "%s", inputFromFile);
-        fprintf(outputFile, "\n\n%s", inputFromFile);
-        firstNumber = MNinit(strlen(inputFromFile));
-
-        if (charsToNumber(inputFromFile, firstNumber, operationType == conversion ? conversionNumeralSystem: numeralSystem) != 0)
-        {
-            printf(" <ERROR>: Invalid digit(s) in '%s' for base %d numeral system (line: %d)\n", inputFromFile, numeralSystem, inputFileLine);
-            errorType = errorType == noError ? invalidFirstNumberDigits : errorType;
-        }
-
-        //init second number
-        if (operationType != conversion && operationType != invalidConvertionNS)
-        {  
-            inputFileLine += 2;
-
-            fscanf(instructionFile, "%s", inputFromFile);
-            fprintf(outputFile, "\n\n%s", inputFromFile);
-            secondNumber = MNinit(strlen(inputFromFile));
-
-            if (charsToNumber(inputFromFile, secondNumber, numeralSystem) != 0)
-            {
-                printf(" <ERROR>: Invalid digit(s) in '%s' for base %d numeral system (line: %d)\n", inputFromFile, numeralSystem, inputFileLine);
-                errorType = errorType == noError ? invalidSecondNumberDigits : errorType;
-            }
-        }
-
-        fprintf(outputFile, "\n\n");
-
-        //calculate
-        if (errorType == noError) 
-        {
+            calcStart = clock();
             switch (operationType)
             {
-            case addition:
-                
-                result = MNinit(MNsize(firstNumber) > MNsize(secondNumber) ? MNsize(firstNumber) + 1: MNsize(secondNumber) + 1);
+            case Addition:
+
+                result = MNinit(MNsize(firstNumber) > MNsize(secondNumber) ? MNsize(firstNumber) + 1 : MNsize(secondNumber) + 1);
                 MNadd(firstNumber, secondNumber, result, numeralSystem);
                 break;
 
-            case multiplication:
+            case Multiplication:
 
                 result = MNinit(MNsize(firstNumber) + MNsize(secondNumber));
                 MNmultiply(firstNumber, secondNumber, result, numeralSystem);
                 break;
 
-            case division:
+            case Division:
 
-                result = MNinit(MNsize(firstNumber));
-
-                if(MNsize(secondNumber) == 0) 
-                {
-                    printf(" <ERROR>: Division by 0 is undefined (line: %d)\n", inputFileLine);
-                    errorType = errorType == noError ? divisionByZero : errorType;
-                    break;
-                }
-
-                MNdivide(firstNumber, secondNumber, result, NULL, numeralSystem); 
-                break;
-
-            case modulo:
-
-                result = MNinit(MNsize(firstNumber));
-
+                result = MNinit(MNsize(firstNumber)); //TODO optimize init size
                 if (MNsize(secondNumber) == 0)
-                {
-                    printf(" <ERROR>: Division by 0 is undefined (line: %d)\n", inputFileLine);
-                    errorType = errorType == noError ? divisionByZero : errorType;
-                    break;
-                }
-
-                MNdivide(firstNumber, secondNumber, NULL, result, numeralSystem);
+                    errorFlags |= divisionByZero;
+                else
+                    MNdivide(firstNumber, secondNumber, result, NULL, numeralSystem);
                 break;
 
-            case exponentiation:
-                
+            case Modulo:
+
+                result = MNinit(MNsize(firstNumber)); //TODO optimize init size
+                if (MNsize(secondNumber) == 0)
+                    errorFlags |= divisionByZero;
+                else
+                    MNdivide(firstNumber, secondNumber, NULL, result, numeralSystem);
+                break;
+
+            case Exponentiation:
+
                 result = MNinit(MNsize(firstNumber));
                 MNraise(firstNumber, secondNumber, result, numeralSystem);
                 break;
 
-            case conversion:
+            case Conversion:
 
                 result = MNinit(4 * MNsize(firstNumber)); //max for convertion (16) -> (2)
-                MNconvert(firstNumber, result, conversionNumeralSystem, numeralSystem);
+                MNconvert(firstNumber, result, numeralSystem, conversionNumeralSystem);
                 break;
-
-            default:
-                break;
+            
             }
+            calcEnd = clock();
         }
 
-        //write result to file
-        switch (errorType)
+        //open new file when separate output
+        if (separateOutputMode)
         {
-        case noError:
+            pathToOutputFile = (char*)malloc((strlen(pathToOutputDirectory) + 17) * sizeof(char));
+            sprintf(pathToOutputFile, "%s/%u.txt", pathToOutputDirectory, calculationNumber);
+            outputFile = fopen(pathToOutputFile, "w");
+        }
 
+        //write to file
+        if (!separateOutputMode && wroteToOutput)
+            fprintf(outputFile, "\n\n");
+        else
+            wroteToOutput = 1;
+
+        fprintf(outputFile, "%s %s\n\n%s", operatorString, numeralSystemString, firstNumberString);
+        if (operationType != Conversion)
+            fprintf(outputFile, "\n\n%s", secondNumberString);
+
+        fprintf(outputFile, "\n\n");
+
+        //write result
+        if (errorFlags == 0)
+        {
             resultString = numberToChars(result);
             fprintf(outputFile, "%s", resultString);
-            MNdelete(result);
-            free(resultString);
-            break;
-        
-        case unknownOperation:
-
-            fprintf(outputFile, "Unknown operation");
-            break;
-
-        case invalidNumeralSystem:
-
-            fprintf(outputFile, "Invalid numeral system");
-            break;
-
-        case invalidFirstNumberDigits:
-
-            fprintf(outputFile, "Invalid digit(s) in first number");
-            break;
-
-        case invalidSecondNumberDigits:
-
-            fprintf(outputFile, "Invalid digit(s) in second number");
-            break;
-
-        case divisionByZero:
-
-            fprintf(outputFile, "Division by 0 is undefined");
-            MNdelete(result);
-            break;
+            fprintf(stdout, "Done in %gs.\n", ((float)(calcEnd - calcStart)) / CLOCKS_PER_SEC);
         }
-        fprintf(outputFile, "\n\n\n");
+        else //write errors
+        {
+            fprintf(stdout, "\n");
+            fprintf(outputFile, "ERR: ");
+            if (errorFlags & invalidNumeralSystem)
+            {
+                fprintf(outputFile, "Invalid numeral system. ");
+                fprintf(stderr, "\t[WARNING]: Invalid numeral system: '%s'.\n", operationType == Conversion ? operatorString : numeralSystemString);
+            }
+            if (errorFlags & invalidConversionNumeralSystem)
+            {
+                fprintf(outputFile, "Invalid conversion numeral system. ");
+                fprintf(stderr, "\t[WARNING]: Invalid conversion numeral system: '%s'.\n", numeralSystemString);
+            }
+            if ((errorFlags & invalidFirstNumberDigits) && !(errorFlags & invalidNumeralSystem))
+            {
+                fprintf(outputFile, "Invalid digit(s) in first number. ");
+                fprintf(stderr, "\t[WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", firstNumberString, numeralSystem);
+            }
+            if ((errorFlags & invalidSecondNumberDigits) && !(errorFlags & invalidNumeralSystem))
+            {
+                fprintf(outputFile, "Invalid digit(s) in second number. ");
+                fprintf(stderr, "\t[WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", secondNumberString, numeralSystem);
+            }
+            if (errorFlags & divisionByZero)
+            {
+                fprintf(outputFile, "Division by 0 is undefined. ");
+                fprintf(stderr, "\t[WARNING]: Division by 0 is undefined.\n");
+            }
+            fprintf(stderr, "\t[WARNING]: Ommiting calculation execution due to incorrect data.\n");
+            errorCounter++;
+        }
 
         //cleanup
-        if (errorType != noError)
-            errorCounter++;
-
-        if (separateOutput == 'y')
+        if (separateOutputMode)
+        {
+            free(pathToOutputFile);
             fclose(outputFile);
+        }
 
         MNdelete(firstNumber);
-        if (operationType != conversion)
+
+        if (operationType != Conversion)
             MNdelete(secondNumber);
 
-        errorType = noError;
-        inputFileLine += 3;
+        if (errorFlags == 0)
+        {
+            MNdelete(result);
+            free(resultString);
+        }
+
+        errorFlags = 0;
         calculationNumber++;
-    } 
+        inputFileLine += operationType == Conversion ? 5 : 7;
+    }
 
-    fclose(instructionFile);
-    if (separateOutput == 'n')
+    //cleanup
+    fclose(inputFile);
+
+    if (!separateOutputMode) 
+    {
+        free(pathToOutputFile);
         fclose(outputFile);
-    
-    if (errorCounter > 0)
-        printf("\n (KALKULATOR): Program found errors in %d calculation(s). Press any key to exit the program.", errorCounter);
+    }
     else
-        printf("\n (KALKULATOR): Program successfully performed all calculations. Press any key to exit the program.");
+        free(pathToOutputDirectory);
+
+    if (operatorString)
+        free(operatorString);
+
+    if (numeralSystemString)
+        free(numeralSystemString);
+
+    if (firstNumberString)
+        free(firstNumberString);
+
+    if (secondNumberString)
+        free(secondNumberString);
+
+    if (fatal)
+    {
+        fprintf(stdout, "\n (KALKULATOR): Program could not complete all calculations due to error(s). Press any key to exit the program.\a\n");
+        getchar();
+
+        return 0;
+    }
+
+    if (errorCounter > 0)
+        fprintf(stdout, "\n (KALKULATOR): Program has found errors in %u calculation(s) but successfully ommited them. Press any key to exit the program.\n", errorCounter);
+    else
+        fprintf(stdout, "\n (KALKULATOR): Program has successfully completed all calculations. Press any key to exit the program.\n");
 
     getchar();
-    getchar();
+    
     return 0;
 }
 
-enum OperationType getOperation(char *input, unsigned char *conversionNumeralSystem)
+char readFromStream(FILE *inputFile, char **dest, size_t destSize)
 {
-    if (strlen(input) == 1) 
+    char lastCharacter = fgetc(inputFile), *tmp;
+    size_t i = 0;
+
+    while (isCharInString(lastCharacter, " \n\t\r")) //ommiting whitespaces
+        lastCharacter = fgetc(inputFile);
+
+    if (lastCharacter == EOF)
+        return -1;
+
+    destSize = destSize == 0 ? 1 : destSize;
+    if (*dest == NULL)
+        *dest = (char*)malloc(destSize * sizeof(char));
+    else
     {
-        switch (input[0])
+        tmp = (char*)realloc(*dest, destSize * sizeof(char));
+        if (tmp == NULL)
+            return -1;
+
+        *dest = tmp;
+    }
+
+    while (!isCharInString(lastCharacter, " \n\t\r") && lastCharacter != EOF) //stop reading on whitespace or EOF
+    {
+        if (destSize <= i) //grow dest if no memory left
         {
-        case '+':
-            return addition;
-        
-        case '*':
-            return multiplication;
-
-        case '/':
-            return division;
-
-        case '^':
-            return exponentiation;
-
-        case '%':
-            return modulo;
+            tmp = (char*)realloc(*dest, 2 * destSize * sizeof(char));
+            if (tmp == NULL)
+                return -1;
+            
+            destSize *= 2;
+            *dest = tmp;
         }
+
+        *(*dest + i) = lastCharacter;
+        i++;
+
+        lastCharacter = fgetc(inputFile);
     }
 
-    unsigned char numeralSystem = getNumeralSystem(input);
+    if (destSize <= i) //grow dest if no memory left
+    {
+        tmp = (char*)realloc(*dest, (destSize + 1) * sizeof(char));
+        if (tmp == NULL)
+            return -1;
 
-    if (numeralSystem == 0)
-        return invalidConvertionNS;
-
-    if (numeralSystem != 1) {
-        *conversionNumeralSystem = numeralSystem;
-        return conversion;
+        destSize *= 2;
+        *dest = tmp;
     }
+    
+    *(*dest + i) = '\0';
 
-    return invalidOperation;
+    return 0;
 }
 
-unsigned char getNumeralSystem(char *input) //returns numeral system from range <2;16> or 0 if out of range or 1 if invalid characters
-{ 
+int isCharInString(char c, const char* string) 
+{
+    size_t len = strlen(string);
+    for (size_t i = 0; i < len; i++)
+        if (c == string[i])
+            return 1;
+
+    return 0;
+}
+
+enum OperationType getOperationType(const char* operationString)
+{
+    size_t len = strlen(operationString);
+    if (len == 1) {
+        switch (operationString[0])
+        {
+        case '+':
+            return Addition;
+
+        case '*':
+            return Multiplication;
+
+        case '/':
+            return Division;
+
+        case '%':
+            return Modulo;
+
+        case '^':
+            return Exponentiation;
+        }
+    }
+    for (size_t i = 0; i < len; i++) 
+    {
+        if (operationString[i] < '0' || operationString[i] > '9')
+            return UnknownOperation;
+    }
+    return Conversion;
+}
+
+unsigned char getNumeralSystem(char* input) //returns numeral system base from range <2;16> or 0 if error
+{
     size_t inputLength = strlen(input);
     unsigned int numeralSystem = 0, a = 1;
 
-    for (long long i = inputLength - 1; i >= 0; i--) 
+    if (inputLength > 9)
+        return 0;
+
+    for (long long i = inputLength - 1; i >= 0; i--)
     {
         if (input[i] < '0' || input[i] > '9')
-            return 1; //error - invalid character
+            return 0; //error - invalid character
 
         numeralSystem += a * (input[i] - '0');
         a *= 10;
@@ -364,5 +466,34 @@ unsigned char getNumeralSystem(char *input) //returns numeral system from range 
     if (numeralSystem < 2 || numeralSystem > 16)
         return 0; //error - numeral system out of range
 
-    return (unsigned char) numeralSystem;
+    return (unsigned char)numeralSystem;
+}
+
+int isFormatCorrect(const char* filename, const char* format)
+{
+    size_t filenameSize = strlen(filename);
+    size_t formatStringSize = strlen(format);
+
+    if (filenameSize < formatStringSize)
+        return 0;
+
+    return !memcmp(filename + filenameSize - formatStringSize, format, formatStringSize * sizeof(char));
+}
+
+int getYNAnswer(const char* question)
+{
+    char answer;
+    while (1)
+    {
+        fprintf(stdout, question);
+        answer = (unsigned char)getchar();
+
+        if (isCharInString(answer, "yY"))
+            return 1;
+
+        if (isCharInString(answer, "nN"))
+            return 0;
+
+        while (getchar() != '\n'); //clear input buffer
+    }
 }

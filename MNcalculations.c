@@ -17,10 +17,8 @@ int charsToNumber(char *chars, myNumber *number, unsigned char base) //converts 
         c = *(chars + charLength - 1 - i);
         if (c >= '0' && c <= '9') 
             MNsetDigit(number, i, c - '0');
-
         else if (c >= 'A' && c <= 'F') 
             MNsetDigit(number, i, c - 'A' + 10);
-
         else if (c >= 'a' && c <= 'f') 
             MNsetDigit(number, i, c - 'a' + 10);
         else 
@@ -154,8 +152,8 @@ int MNsubstract(myNumber *a, myNumber *b, myNumber *result, unsigned char base) 
     myNumber *aCopy = MNinit(aSize); //working on copy of a not to change a
 
     //copy a to aCopy
-    for (int j = 0; j < aSize; j++) 
-        MNsetDigit(aCopy, j, MNgetDigit(a, j));
+    for (int k = 0; k < aSize; k++) 
+        MNsetDigit(aCopy, k, MNgetDigit(a, k));
 
     while (i < bSize) 
     {
