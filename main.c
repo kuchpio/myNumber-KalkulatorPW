@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     {
         while (1)
         {
-            fprintf(stdout, " (KALKULATOR): Name of instructions file: ");
+            fprintf(stdout, " (KALKULATOR): Name of input file: ");
             readFromStream(stdin, &pathToInputFile, PREFERABLE_INPUT_SIZE);
 
             if ( (inputFile = fopen(pathToInputFile, "r")) )
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         if (operationType == UnknownOperation) 
         {
             fprintf(stdout, " (KALKULATOR): Working on calculation %u (line: %u) ... ", calculationNumber, inputFileLine);
-            fprintf(stderr, "\n\t<ERROR>: Unknown operation: '%s'.\n", operatorString);
+            fprintf(stderr, "\n <ERROR>: Unknown operation: '%s'.\n", operatorString);
             fatal = 1;
             break;
         }
@@ -270,29 +270,29 @@ int main(int argc, char** argv)
             if (errorFlags & invalidNumeralSystem)
             {
                 fprintf(outputFile, "Invalid numeral system. ");
-                fprintf(stderr, "\t[WARNING]: Invalid numeral system: '%s'.\n", operationType == Conversion ? operatorString : numeralSystemString);
+                fprintf(stderr, " [WARNING]: Invalid numeral system: '%s'.\n", operationType == Conversion ? operatorString : numeralSystemString);
             }
             if (errorFlags & invalidConversionNumeralSystem)
             {
                 fprintf(outputFile, "Invalid conversion numeral system. ");
-                fprintf(stderr, "\t[WARNING]: Invalid conversion numeral system: '%s'.\n", numeralSystemString);
+                fprintf(stderr, " [WARNING]: Invalid conversion numeral system: '%s'.\n", numeralSystemString);
             }
             if ((errorFlags & invalidFirstNumberDigits) && !(errorFlags & invalidNumeralSystem))
             {
                 fprintf(outputFile, "Invalid digit(s) in first number. ");
-                fprintf(stderr, "\t[WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", firstNumberString, numeralSystem);
+                fprintf(stderr, " [WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", firstNumberString, numeralSystem);
             }
             if ((errorFlags & invalidSecondNumberDigits) && !(errorFlags & invalidNumeralSystem))
             {
                 fprintf(outputFile, "Invalid digit(s) in second number. ");
-                fprintf(stderr, "\t[WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", secondNumberString, numeralSystem);
+                fprintf(stderr, " [WARNING]: Invalid digit(s) in '%s' for base %u numeral system.\n", secondNumberString, numeralSystem);
             }
             if (errorFlags & divisionByZero)
             {
                 fprintf(outputFile, "Division by 0 is undefined. ");
-                fprintf(stderr, "\t[WARNING]: Division by 0 is undefined.\n");
+                fprintf(stderr, " [WARNING]: Division by 0 is undefined.\n");
             }
-            fprintf(stderr, "\t[WARNING]: Ommiting calculation execution due to incorrect data.\n");
+            fprintf(stderr, " [WARNING]: Ommiting calculation execution due to incorrect data.\n");
             errorCounter++;
         }
 
