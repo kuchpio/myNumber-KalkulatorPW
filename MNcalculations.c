@@ -1,3 +1,6 @@
+// Copyright (c) 2023 Piotr Kucharczyk
+// This code is licensed under MIT License (see License.md for details)
+
 #include "MNcalculations.h"
 #include "myNumber.h"
 #include <stdio.h>

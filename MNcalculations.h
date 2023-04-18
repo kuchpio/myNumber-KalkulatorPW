@@ -1,3 +1,6 @@
+// Copyright (c) 2023 Piotr Kucharczyk
+// This code is licensed under MIT License (see License.md for details)
+
 #ifndef __MNCALCULATIONS_H__
 #define __MNCALCULATIONS_H__
 

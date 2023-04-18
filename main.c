@@ -1,3 +1,6 @@
+// Copyright (c) 2023 Piotr Kucharczyk
+// This code is licensed under MIT License (see License.md for details)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -231,7 +234,9 @@ int main(int argc, char** argv)
                 result = MNinit(4 * MNsize(firstNumber)); //max for convertion (16) -> (2)
                 MNconvert(firstNumber, result, numeralSystem, conversionNumeralSystem);
                 break;
-            
+
+            case UnknownOperation: // unreachable
+                break;
             }
             calcEnd = clock();
         }
@@ -495,7 +500,7 @@ int getYNAnswer(const char* question)
     char answer;
     while (1)
     {
-        fprintf(stdout, question);
+        fprintf(stdout, "%s", question);
         answer = (unsigned char)getchar();
 
         if (isCharInString(answer, "yY"))
