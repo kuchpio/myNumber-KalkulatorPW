@@ -72,7 +72,7 @@ For an input file that looks like
 
 
 ```
-the results in will look like
+the results will look like
 ```
 + 10
 
